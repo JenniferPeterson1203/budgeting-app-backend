@@ -1,23 +1,28 @@
 // we need to import express to create the router for the resource. In this case the resource is bookmarks
 const express = require("express");
 
-function validateForm(req, res, next) {
-  if (!req.body.name || !req.body.category || !req.body.url)
-    res.status(400).json({ message: "Invalid Inputs" });
-  else next();
-}
-
 // we need to create a Router which is a way to reference in app.js this file
 const transactions = express.Router();
 // I want to return the data as json from the model using my controller
 let transactionsArray = require("../models/transaction.model");
 
-// create get route to return json data to the client
+function validateForm(req, res, next) {
+  if (
+    !req.body.name ||
+    !req.body.date ||
+    !req.body.amount ||
+    !req.body.from ||
+    !req.body.category
+  ) {
+    res.status(400).json({ message: "Invalid Inputs" });
+  } else next();
+}
+// route to get ALL transactions (index page)
 transactions.get("/", (req, res) => {
   res.json({ transactions: transactionsArray });
 });
 
-//get a single transaction
+//route to get a single transaction
 transactions.get("/:id", (req, res) => {
   const { id } = req.params;
 
@@ -25,7 +30,9 @@ transactions.get("/:id", (req, res) => {
     (transaction) => transaction.id === +id
   );
 
-  res.json({ transaction });
+  if (transaction)
+    res.status(200).json({ transaction: transaction, message: "Success" });
+  else res.status(400).json({ error: "ID not found" });
 });
 
 // route to create a new transaction
@@ -44,6 +51,18 @@ transactions.post("/", validateForm, (req, res) => {
   transactionsArray.push(req.body);
 
   // send back all the transactions because I plan to reset the setTransactions state
+  res.status(200).json({ transactions: transactionsArray });
+});
+
+// route to edit a transaction
+transactions.put("/:id", validateForm, (req, res) => {
+  const { id } = req.params;
+
+  const transactionIndex = transactionsArray.findIndex((log) => log.id === +id);
+
+  if (transactionIndex > -1) transactionsArray[transactionIndex] = req.body;
+
+  // send back all the transactions because I plan to reset the setTransactions state
   res.json({ transactions: transactionsArray });
 });
 
@@ -58,5 +77,5 @@ transactions.delete("/:id", (req, res) => {
   res.json({ transactions: transactionsArray });
 });
 
-// STILL NEED THE EDIT ROUTE!!
+// export the transactions variable on line 11 to be used in the app.js file
 module.exports = transactions;
